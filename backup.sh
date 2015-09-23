@@ -19,16 +19,16 @@ do
 
     s3file=${database}/${database}_`date +"%Y-%m-%d_%H-%M-%S"`.sql.gz
 
-    s3cmd put -q --access_key=$S3_KEY --secret_key=$S3_SECRET --acl-private --no-progress --server-side-encryption --multipart-chunk-size-mb=640 daily_${database}.sql.gz $S3_BUCKET/daily/${s3file} 2>&1
+    s3cmd put --quiet --config=${data_dir}/s3cfg --access_key=$S3_KEY --secret_key=$S3_SECRET --acl-private --no-progress --server-side-encryption --multipart-chunk-size-mb=640 daily_${database}.sql.gz $S3_BUCKET/daily/${s3file} 2>&1
 
     if [ `date +"%u"` -eq 1 ]
     then
-        s3cmd sync -q --access_key=$S3_KEY --secret_key=$S3_SECRET --acl-private --no-progress --server-side-encryption --multipart-chunk-size-mb=640 $S3_BUCKET/daily/${s3file} $S3_BUCKET/weekly/${database}/ 2>&1
+        s3cmd sync --quiet --config=${data_dir}/s3cfg --access_key=$S3_KEY --secret_key=$S3_SECRET --acl-private --no-progress --server-side-encryption --multipart-chunk-size-mb=640 $S3_BUCKET/daily/${s3file} $S3_BUCKET/weekly/${database}/ 2>&1
     fi
 
     if [ `date +"%d"` -eq 1 ]
     then
-        s3cmd sync -q --access_key=$S3_KEY --secret_key=$S3_SECRET --acl-private --no-progress --server-side-encryption --multipart-chunk-size-mb=640 $S3_BUCKET/daily/${s3file} $S3_BUCKET/monthly/${database}/ 2>&1
+        s3cmd sync --quiet --config=${data_dir}/s3cfg --access_key=$S3_KEY --secret_key=$S3_SECRET --acl-private --no-progress --server-side-encryption --multipart-chunk-size-mb=640 $S3_BUCKET/daily/${s3file} $S3_BUCKET/monthly/${database}/ 2>&1
     fi
 
     rm daily_${database}.txt
