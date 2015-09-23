@@ -4,6 +4,9 @@ echo ""
 echo ""
 echo "`date +"%Y-%m-%d %H:%M:%S"` BACKUP STARTED"
 
+aws configure set aws_access_key_id $S3_KEY
+aws configure set aws_secret_access_key $S3_SECRET
+
 data_dir=/usr/src/entu-backup
 
 cd ${data_dir}
@@ -18,16 +21,16 @@ do
 
     s3file=${database}/${database}_`date +"%Y-%m-%d_%H-%M-%S"`.sql.gz
 
-    s3cmd put --quiet --config=${data_dir}/s3cfg --access_key=$S3_KEY --secret_key=$S3_SECRET --acl-private --no-progress --server-side-encryption --multipart-chunk-size-mb=640 ${database}.sql.gz $S3_BUCKET/daily/${s3file} 2>&1
+    aws s3 cp ${database}.sql.gz $S3_BUCKET/daily/${s3file} --quiet --sse --acl private
 
     if [ `date +"%u"` -eq 1 ]
     then
-        s3cmd sync --quiet --config=${data_dir}/s3cfg --access_key=$S3_KEY --secret_key=$S3_SECRET --acl-private --no-progress --server-side-encryption --multipart-chunk-size-mb=640 $S3_BUCKET/daily/${s3file} $S3_BUCKET/weekly/${database}/ 2>&1
+        aws s3 sync $S3_BUCKET/daily/${s3file} $S3_BUCKET/weekly/${database}/ --quiet --sse --acl private
     fi
 
     if [ `date +"%d"` -eq 1 ]
     then
-        s3cmd sync --quiet --config=${data_dir}/s3cfg --access_key=$S3_KEY --secret_key=$S3_SECRET --acl-private --no-progress --server-side-encryption --multipart-chunk-size-mb=640 $S3_BUCKET/daily/${s3file} $S3_BUCKET/monthly/${database}/ 2>&1
+        aws s3 sync $S3_BUCKET/daily/${s3file} $S3_BUCKET/monthly/${database}/ --quiet --sse --acl private
     fi
 
     rm ${database}.txt
