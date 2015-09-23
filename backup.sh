@@ -4,7 +4,7 @@ echo ""
 echo ""
 echo "`date +"%Y-%m-%d %H:%M:%S"` BACKUP STARTED"
 
-data_dir=/usr/src/entu-backup/backup
+data_dir=/usr/src/entu-backup
 s3cmd_dir=/usr/src/entu-backup/s3cmd
 
 cd ${data_dir}
