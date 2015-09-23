@@ -13,7 +13,7 @@ MYSQL_PWD=$MYSQL_PASSWORD mysql -h$MYSQL_HOST -u$MYSQL_USER -Bse "SELECT DISTINC
 
 while read database
 do
-    echo "`date +"%Y-%m-%d %H:%M:%S"` ${database}"
+    # echo "`date +"%Y-%m-%d %H:%M:%S"` ${database}"
 
     MYSQL_PWD=$MYSQL_PASSWORD mysql -h$MYSQL_HOST -u$MYSQL_USER -Bse "SELECT DISTINCT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = '${database}' AND TABLE_TYPE = 'BASE TABLE' ORDER BY TABLE_NAME;" > daily_${database}.txt
     MYSQL_PWD=$MYSQL_PASSWORD mysqldump ${database} -h$MYSQL_HOST -u$MYSQL_USER --single-transaction `cat daily_${database}.txt` | gzip -9 > daily_${database}.sql.gz
