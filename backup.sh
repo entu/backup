@@ -25,12 +25,12 @@ do
 
     if [ `date +"%u"` -eq 1 ]
     then
-        aws s3 sync $S3_BUCKET/daily/${s3file} $S3_BUCKET/weekly/${database}/ --quiet --sse --acl private
+        aws s3 cp $S3_BUCKET/daily/${s3file} $S3_BUCKET/weekly/${database}/ --quiet --sse --acl private
     fi
 
     if [ `date +"%d"` -eq 1 ]
     then
-        aws s3 sync $S3_BUCKET/daily/${s3file} $S3_BUCKET/monthly/${database}/ --quiet --sse --acl private
+        aws s3 cp $S3_BUCKET/daily/${s3file} $S3_BUCKET/monthly/${database}/ --quiet --sse --acl private
     fi
 
     rm ${database}.txt
