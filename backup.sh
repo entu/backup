@@ -11,12 +11,12 @@ data_dir=/usr/src/entu-backup
 
 cd ${data_dir}
 
-MYSQL_PWD=$MYSQL_PASSWORD mysql -h$MYSQL_HOST -u$MYSQL_USER -Bse "SELECT DISTINCT TABLE_SCHEMA FROM information_schema.TABLES WHERE TABLE_SCHEMA <> 'information_schema' ORDER BY TABLE_SCHEMA;" > databases.txt
+MYSQL_PWD=$MYSQL_PASSWORD mysql -h$MYSQL_HOST -u$MYSQL_USER --ssl-ca=$MYSQL_SSL_CA -Bse "SELECT DISTINCT TABLE_SCHEMA FROM information_schema.TABLES WHERE TABLE_SCHEMA <> 'information_schema' ORDER BY TABLE_SCHEMA;" > databases.txt
 
 while read database
 do
 
-    MYSQL_PWD=$MYSQL_PASSWORD mysql -h$MYSQL_HOST -u$MYSQL_USER -Bse "SELECT DISTINCT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = '${database}' AND TABLE_TYPE = 'BASE TABLE' ORDER BY TABLE_NAME;" > ${database}.txt
+    MYSQL_PWD=$MYSQL_PASSWORD mysql -h$MYSQL_HOST -u$MYSQL_USER --ssl-ca=$MYSQL_SSL_CA -Bse "SELECT DISTINCT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = '${database}' AND TABLE_TYPE = 'BASE TABLE' ORDER BY TABLE_NAME;" > ${database}.txt
     MYSQL_PWD=$MYSQL_PASSWORD mysqldump ${database} -h$MYSQL_HOST -u$MYSQL_USER --single-transaction `cat ${database}.txt` | gzip -9 > ${database}.sql.gz
 
     s3file=${database}/${database}_`date +"%Y-%m-%d_%H-%M-%S"`.sql.gz

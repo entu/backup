@@ -1,28 +1,28 @@
 #!/bin/bash
 
-mkdir -p /data/entu_backup/code /data/entu_backup/dump
-cd /data/entu_backup/code
+mkdir -p /data/backup/code /data/backup/ssl /data/backup/dump
+cd /data/backup/code
 
-git clone -q https://github.com/argoroots/entu-backup.git ./
+git clone -q https://github.com/entu/entu-backup.git ./
 git checkout -q master
 git pull
 
 printf "\n\n"
-version=`date +"%y%m%d.%H%M%S"`
-docker build --quiet --pull --tag=entu_backup:$version ./ && docker tag entu_backup:$version entu_backup:latest
+docker build --quiet --pull --tag=backup ./
 
 printf "\n\n"
-docker stop entu_backup
-docker rm entu_backup
+docker stop backup
+docker rm backup
 docker run -d \
-    --name="entu_backup" \
-    --cpu-shares=512 \
-    --env="VERSION=$version" \
+    --net="entu" \
+    --name="backup" \
     --env="MYSQL_HOST=" \
+    --env="MYSQL_PORT=" \
     --env="MYSQL_USER=" \
     --env="MYSQL_PASSWORD=" \
-    --env="S3_BUCKET=" \
+    --env="MYSQL_SSL_CA=" \
+    --env="S3_BUCKET=s3://" \
     --env="S3_KEY=" \
     --env="S3_SECRET=" \
-    --volume="/data/entu_backup/dump:/usr/src/entu-backup/dump" \
-    entu_backup
+    --volume="/data/backup/dump:/usr/src/entu-backup/dump" \
+    backup
