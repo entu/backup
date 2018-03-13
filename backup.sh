@@ -17,7 +17,7 @@ while read database
 do
 
     MYSQL_PWD=$MYSQL_PASSWORD mysql -h$MYSQL_HOST -u$MYSQL_USER --ssl-ca=$MYSQL_SSL_CA --ssl-verify-server-cert -Bse "SELECT DISTINCT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = '${database}' AND TABLE_TYPE = 'BASE TABLE' ORDER BY TABLE_NAME;" > ${database}.txt
-    MYSQL_PWD=$MYSQL_PASSWORD mysqldump ${database} -h$MYSQL_HOST -u$MYSQL_USER --single-transaction `cat ${database}.txt` | gzip -9 > ${database}.sql.gz
+    MYSQL_PWD=$MYSQL_PASSWORD mysqldump ${database} -h$MYSQL_HOST -u$MYSQL_USER --ssl-ca=$MYSQL_SSL_CA --ssl-verify-server-cert --single-transaction `cat ${database}.txt` | gzip -9 > ${database}.sql.gz
 
     s3file=${database}/${database}_`date +"%Y-%m-%d_%H-%M-%S"`.sql.gz
 
