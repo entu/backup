@@ -20,7 +20,7 @@ DUMP_DIR="/dump/mongodump-$TIMESTAMP"
 mkdir -p "$DUMP_DIR"
 
 # Fetch the list of databases
-DBS=$(mongo --quiet --eval "db.adminCommand('listDatabases').databases.map(db => db.name)" --uri "$MONGODB_URL")
+DBS=$(mongosh --quiet --eval "db.adminCommand('listDatabases').databases.map(db => db.name)" "$MONGODB_URL")
 
 # Perform the MongoDB dump for each database, excluding system databases
 for DB in $(echo "$DBS" | jq -r '.[]'); do
