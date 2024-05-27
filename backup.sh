@@ -1,46 +1,43 @@
-#!/bin/sh
+#!/bin/bash
 
-echo ""
-echo ""
-echo "`date +"%Y-%m-%d %H:%M:%S"` BACKUP STARTED"
+# Environment variables for MongoDB and S3
+MONGO_URI=${MONGO_URI:-mongodb://localhost:27017}
+S3_BUCKET=${S3_BUCKET}
+S3_ACCESS_KEY=${S3_ACCESS_KEY}
+S3_SECRET_KEY=${S3_SECRET_KEY}
+S3_ENDPOINT=${S3_ENDPOINT}
 
-aws configure set aws_access_key_id $S3_KEY
-aws configure set aws_secret_access_key $S3_SECRET
+# List of system databases to exclude
+EXCLUDE_DBS=("admin" "local" "config")
 
-data_dir=/usr/src/entu-backup
+# Get the current date and time for the dump directory
+TIMESTAMP=$(date +"%Y%m%d%H%M%S")
+DUMP_DIR="/dump/mongodump-$TIMESTAMP"
 
-cd ${data_dir}
+# Create the dump directory
+mkdir -p "$DUMP_DIR"
 
-MYSQL_PWD=$MYSQL_PASSWORD mysql -h$MYSQL_HOST -u$MYSQL_USER --ssl-verify-server-cert -Bse "SELECT DISTINCT TABLE_SCHEMA FROM information_schema.TABLES WHERE TABLE_SCHEMA <> 'information_schema' ORDER BY TABLE_SCHEMA;" > databases.txt
+# Fetch the list of databases
+DBS=$(mongo --quiet --eval "db.adminCommand('listDatabases').databases.map(db => db.name)" --uri "$MONGO_URI")
 
-while read database
-do
-
-    MYSQL_PWD=$MYSQL_PASSWORD mysql -h$MYSQL_HOST -u$MYSQL_USER --ssl-verify-server-cert -Bse "SELECT DISTINCT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = '${database}' AND TABLE_TYPE = 'BASE TABLE' ORDER BY TABLE_NAME;" > ${database}.txt
-    MYSQL_PWD=$MYSQL_PASSWORD mysqldump ${database} -h$MYSQL_HOST -u$MYSQL_USER --ssl-verify-server-cert --single-transaction `cat ${database}.txt` | gzip -9 > ${database}.sql.gz
-
-    s3file=${database}/${database}_`date +"%Y-%m-%d_%H-%M-%S"`.sql.gz
-
-    aws s3 cp ${database}.sql.gz $S3_BUCKET/daily/${s3file} --quiet --sse --acl private
-
-    if [ `date +"%u"` -eq 1 ]
-    then
-        aws s3 cp $S3_BUCKET/daily/${s3file} $S3_BUCKET/weekly/${database}/ --quiet --sse --acl private
+# Perform the MongoDB dump for each database, excluding system databases
+for DB in $(echo "$DBS" | jq -r '.[]'); do
+    if [[ ! " ${EXCLUDE_DBS[@]} " =~ " ${DB} " ]]; then
+        echo "Dumping database: $DB"
+        mongodump --uri "$MONGO_URI" --db "$DB" --out "$DUMP_DIR"
     fi
+done
 
-    if [ `date +"%d"` -eq 1 ]
-    then
-        aws s3 cp $S3_BUCKET/daily/${s3file} $S3_BUCKET/monthly/${database}/ --quiet --sse --acl private
-    fi
+# Configure s3cmd with the provided credentials
+echo "[default]
+access_key = $S3_ACCESS_KEY
+secret_key = $S3_SECRET_KEY
+host_base = $S3_ENDPOINT
+host_bucket = %(bucket)s.$S3_ENDPOINT
+" > /root/.s3cfg
 
-    rm ${database}.txt
-    rm ${database}.sql.gz
+# Upload the dump to S3
+s3cmd sync "$DUMP_DIR" s3://$S3_BUCKET/mongodump-$TIMESTAMP
 
-done < databases.txt
-
-rm databases.txt
-
-echo "`date +"%Y-%m-%d %H:%M:%S"` BACKUP DONE"
-echo ""
-
-exit 0
+# Clean up dump files
+rm -rf "$DUMP_DIR"

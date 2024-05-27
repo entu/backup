@@ -1,1 +1,1 @@
-Data backup script for Entu.ee
+Data backup script for Entu
