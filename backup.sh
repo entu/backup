@@ -26,7 +26,7 @@ DBS=$(mongosh --quiet --eval "db.adminCommand('listDatabases').databases.map(db 
 for DB in $(echo "$DBS" | jq -r '.[]'); do
     if [[ ! " ${EXCLUDE_DBS[@]} " =~ " ${DB} " ]]; then
         echo "Dumping database: $DB"
-        mongodump --uri "$MONGODB_URL" --db "$DB" --out "$DUMP_DIR"
+        mongodump --uri "$MONGODB_URL/$DB" --out "$DUMP_DIR"
     fi
 done
 
