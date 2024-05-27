@@ -22,8 +22,11 @@ mkdir -p "$DUMP_DIR"
 # Fetch the list of databases
 DBS=$(mongosh --quiet --eval "db.adminCommand('listDatabases').databases.map(db => db.name)" "$MONGODB_URL")
 
+echo "Databases: $DBS"
+
 # Perform the MongoDB dump for each database, excluding system databases
 for DB in $(echo "$DBS" | jq -r '.[]'); do
+    echo "Checking database: $DB"
     if [[ ! " ${EXCLUDE_DBS[@]} " =~ " ${DB} " ]]; then
         echo "Dumping database: $DB"
         mongodump --uri "$MONGODB_URL/$DB" --out "$DUMP_DIR"
