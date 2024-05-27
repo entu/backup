@@ -1,7 +1,10 @@
 #!/bin/bash
 
 # Environment variables for MongoDB and S3
-MONGODB_URL=${MONGODB_URL}
+MONGODB_HOST=${MONGODB_HOST}
+MONGODB_PORT=${MONGODB_PORT}
+MONGODB_USERNAME=${MONGODB_USERNAME}
+MONGODB_PASSWORD=${MONGODB_PASSWORD}
 
 S3_REGION=${S3_REGION}
 S3_ENDPOINT=${S3_ENDPOINT}
@@ -20,16 +23,13 @@ DUMP_DIR="/dump/mongodump-$TIMESTAMP"
 mkdir -p "$DUMP_DIR"
 
 # Fetch the list of databases
-DBS=$(mongosh --quiet --eval "db.adminCommand('listDatabases').databases.map(db => db.name)" "$MONGODB_URL")
-
-echo "Databases: $DBS"
+DBS=$(mongosh --host "$MONGODB_HOST" --port "$MONGODB_PORT" --username "$MONGODB_USERNAME" --password "$MONGODB_PASSWORD" --quiet --eval "db.adminCommand('listDatabases').databases.map(db => db.name).join('\n')" | sed "s/'//g")
 
 # Perform the MongoDB dump for each database, excluding system databases
-for DB in $(echo "$DBS" | jq -r '.[]'); do
-    echo "Checking database: $DB"
+for DB in $DBS; do
     if [[ ! " ${EXCLUDE_DBS[@]} " =~ " ${DB} " ]]; then
         echo "Dumping database: $DB"
-        mongodump --uri "$MONGODB_URL/$DB" --out "$DUMP_DIR"
+        mongodump --host "$MONGODB_HOST" --port "$MONGODB_PORT" --username "$MONGODB_USERNAME" --password "$MONGODB_PASSWORD" --db "$DB" --out "$DUMP_DIR"
     fi
 done
 
