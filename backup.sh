@@ -1,11 +1,13 @@
 #!/bin/bash
 
 # Environment variables for MongoDB and S3
-MONGO_URI=${MONGO_URI:-mongodb://localhost:27017}
-S3_BUCKET=${S3_BUCKET}
-S3_ACCESS_KEY=${S3_ACCESS_KEY}
-S3_SECRET_KEY=${S3_SECRET_KEY}
+MONGODB_URL=${MONGODB_URL}
+
+S3_REGION=${S3_REGION}
 S3_ENDPOINT=${S3_ENDPOINT}
+S3_BUCKET=${S3_BUCKET}
+S3_KEY=${S3_KEY}
+S3_SECRET=${S3_SECRET}
 
 # List of system databases to exclude
 EXCLUDE_DBS=("admin" "local" "config")
@@ -18,22 +20,23 @@ DUMP_DIR="/dump/mongodump-$TIMESTAMP"
 mkdir -p "$DUMP_DIR"
 
 # Fetch the list of databases
-DBS=$(mongo --quiet --eval "db.adminCommand('listDatabases').databases.map(db => db.name)" --uri "$MONGO_URI")
+DBS=$(mongo --quiet --eval "db.adminCommand('listDatabases').databases.map(db => db.name)" --uri "$MONGODB_URL")
 
 # Perform the MongoDB dump for each database, excluding system databases
 for DB in $(echo "$DBS" | jq -r '.[]'); do
     if [[ ! " ${EXCLUDE_DBS[@]} " =~ " ${DB} " ]]; then
         echo "Dumping database: $DB"
-        mongodump --uri "$MONGO_URI" --db "$DB" --out "$DUMP_DIR"
+        mongodump --uri "$MONGODB_URL" --db "$DB" --out "$DUMP_DIR"
     fi
 done
 
 # Configure s3cmd with the provided credentials
 echo "[default]
-access_key = $S3_ACCESS_KEY
-secret_key = $S3_SECRET_KEY
+access_key = $S3_KEY
+secret_key = $S3_SECRET
 host_base = $S3_ENDPOINT
 host_bucket = %(bucket)s.$S3_ENDPOINT
+region = $S3_REGION
 " > /root/.s3cfg
 
 # Upload the dump to S3
