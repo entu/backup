@@ -13,8 +13,8 @@ S3_SECRET=${S3_SECRET}
 EXCLUDE_DBS=("admin" "local" "config")
 
 # Get the current date and time for the dump directory
-TIMESTAMP=$(date +"%Y-%m-%d-%H-%M-%S")
-DUMP_DIR="/dump/mongodump-$TIMESTAMP"
+TIMESTAMP=$(date +"%Y-%m-%d")
+DUMP_DIR="/dump/"
 
 # Create the dump directory
 mkdir -p "$DUMP_DIR"
@@ -26,7 +26,7 @@ DBS=$(mongosh --quiet --eval "db.adminCommand('listDatabases').databases.map(db 
 for DB in $DBS; do
     if [[ ! " ${EXCLUDE_DBS[@]} " =~ " ${DB} " ]]; then
         echo "Dumping database: $DB"
-        mongodump --quiet --uri "$MONGODB_URL" --db "$DB" --out "$DUMP_DIR"
+        mongodump --quiet --uri "$MONGODB_URL" --db "$DB" --out "$DUMP_DIR/$DB/$TIMESTAMP" --gzip
     fi
 done
 
@@ -37,10 +37,10 @@ secret_key = $S3_SECRET
 host_base = $S3_ENDPOINT
 host_bucket = %(bucket)s.$S3_ENDPOINT
 region = $S3_REGION
-" > /root/.s3cfg
+" > /data/db/.s3cfg
 
 # Upload the dump to S3
-s3cmd sync "$DUMP_DIR" s3://$S3_BUCKET/mongodump-$TIMESTAMP
+s3cmd sync "$DUMP_DIR" s3://$S3_BUCKET/
 
 # Clean up dump files
 rm -rf "$DUMP_DIR"
