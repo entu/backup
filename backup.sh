@@ -14,7 +14,7 @@ EXCLUDE_DBS=("admin" "local" "config")
 
 # Get the current date and time for the dump directory
 TIMESTAMP=$(date +"%Y-%m-%d")
-DUMP_DIR="/dump/"
+DUMP_DIR="/dump/$TIMESTAMP"
 
 # Create the dump directory
 mkdir -p "$DUMP_DIR"
@@ -26,7 +26,7 @@ DBS=$(mongosh --quiet --eval "db.adminCommand('listDatabases').databases.map(db 
 for DB in $DBS; do
     if [[ ! " ${EXCLUDE_DBS[@]} " =~ " ${DB} " ]]; then
         echo "Dumping database: $DB"
-        mongodump --quiet --uri "$MONGODB_URL" --db "$DB" --out "$DUMP_DIR/$DB/$TIMESTAMP" --gzip
+        mongodump --quiet --uri "$MONGODB_URL" --db "$DB" --out "$DUMP_DIR" --gzip
     fi
 done
 
